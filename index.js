@@ -14,6 +14,9 @@ const RSS_URL = process.env.RSS_URL;
 const POLL_INTERVAL =
   Number.parseInt(process.env.POLL_INTERVAL, 10) || 60_000; // default 1 minute
 
+// Keep track of the last seen "top 5" items to detect new arrivals
+const previousTopItemKeys = new Set();
+
 if (!RSS_URL) {
   console.error(
     'Missing RSS_URL environment variable. Example:\n' +
@@ -60,15 +63,44 @@ async function fetchRss() {
       `Fetched ${normalizedItems.filter(Boolean).length} items at ${new Date().toISOString()}`,
     );
 
-    // For demo purposes: log titles of latest items (up to 5)
-    normalizedItems
-      .filter(Boolean)
-      .slice(0, 5)
-      .forEach((item, index) => {
-        const title = item.title?._ || item.title || '(no title)';
-        const link = item.link?._ || item.link?.href || item.link || '(no link)';
-        console.log(`#${index + 1}: ${title} - ${link}`);
-      });
+    const topItems = normalizedItems.filter(Boolean).slice(0, 5);
+
+    // Build stable-ish keys for comparison between polls
+    const topItemKeys = topItems.map((item) => {
+      const guid = item.guid?._ || item.guid;
+      const id = item.id || item['dc:identifier'];
+      const title = item.title?._ || item.title;
+      const link = item.link?._ || item.link?.href || item.link;
+      const pubDate = item.pubDate || item.published || item.updated;
+      return [guid, id, title, link, pubDate].filter(Boolean).join('||');
+    });
+
+    // Detect if there are any new items in the current top 5 compared to last poll
+    const isFirstRun = previousTopItemKeys.size === 0;
+    if (!isFirstRun) {
+      const hasNewTopItems = topItemKeys.some(
+        (key) => key && !previousTopItemKeys.has(key),
+      );
+
+      if (hasNewTopItems) {
+        console.log('New items detected in top 5 – playing notification sound.');
+        // Terminal bell – most terminals will play a short notification sound
+        process.stdout.write('\x07');
+      }
+    }
+
+    // Update the remembered top items for the next poll
+    previousTopItemKeys.clear();
+    topItemKeys.forEach((key) => {
+      if (key) previousTopItemKeys.add(key);
+    });
+
+    // Log titles of latest items (up to 5)
+    topItems.forEach((item, index) => {
+      const title = item.title?._ || item.title || '(no title)';
+      const link = item.link?._ || item.link?.href || item.link || '(no link)';
+      console.log(`#${index + 1}: ${title} - ${link}`);
+    });
   } catch (err) {
     console.error('Error while fetching/parsing RSS:', err.message || err);
   }
