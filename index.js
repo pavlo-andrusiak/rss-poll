@@ -101,6 +101,7 @@ async function fetchRss() {
     });
 
     // Log titles of latest items (up to 5)
+    console.log(`-------------------------------------------`);
     topItems.forEach((item, index) => {
       const title = item.title?._ || item.title || '(no title)';
       const link = item.link?._ || item.link?.href || item.link || '(no link)';
