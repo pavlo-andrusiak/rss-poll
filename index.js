@@ -17,6 +17,12 @@ const POLL_INTERVAL =
 // Keep track of the last seen "top 5" items to detect new arrivals
 const previousTopItemKeys = new Set();
 
+function playNotificationSound(message = 'Notification') {
+  console.log(`${message} – playing notification sound.`);
+  // Terminal bell – most terminals will play a short notification sound
+  process.stdout.write('\x07');
+}
+
 if (!RSS_URL) {
   console.error(
     'Missing RSS_URL environment variable. Example:\n' +
@@ -83,9 +89,7 @@ async function fetchRss() {
       );
 
       if (hasNewTopItems) {
-        console.log('New items detected in top 5 – playing notification sound.');
-        // Terminal bell – most terminals will play a short notification sound
-        process.stdout.write('\x07');
+        playNotificationSound('New items detected in top 5');
       }
     }
 
@@ -107,5 +111,6 @@ async function fetchRss() {
 }
 
 // Initial fetch immediately, then on interval
+playNotificationSound('RSS poller started');
 fetchRss();
 setInterval(fetchRss, POLL_INTERVAL);
