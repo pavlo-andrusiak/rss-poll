@@ -1,6 +1,7 @@
 import 'dotenv/config.js';
 import fetch from 'node-fetch';
 import { parseStringPromise } from 'xml2js';
+import { exec } from 'child_process';
 
 // Configuration
 // You can configure via environment variables:
@@ -20,7 +21,7 @@ const previousTopItemKeys = new Set();
 function playNotificationSound(message = 'Notification') {
   console.log(`${message} – playing notification sound.`);
   // Terminal bell – most terminals will play a short notification sound
-  process.stdout.write('\x07');
+  exec('paplay /usr/share/sounds/freedesktop/stereo/complete.oga');
 }
 
 if (!RSS_URL) {
